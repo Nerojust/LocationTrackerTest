@@ -1,4 +1,4 @@
-package com.example.locationtrackertest;
+package com.example.locationtrackertest.Activities;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -8,6 +8,8 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,6 +17,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.example.locationtrackertest.R;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,13 +29,35 @@ public class MainActivity extends AppCompatActivity {
     LocationListener locationListener;
 
     TextView longitude, latitude;
+    Button startTracking, stopTracking;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+        initViews();
+        initListeners();
+    }
+
+    private void initViews() {
         longitude = findViewById(R.id.longitude);
         latitude = findViewById(R.id.latitude);
+        startTracking = findViewById(R.id.startTracking);
+        stopTracking = findViewById(R.id.stopTracking);
+    }
+
+    private void initListeners() {
+        startTracking.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                performTrackingEvent();
+            }
+        });
+    }
+
+    private void performTrackingEvent() {
         locationManager = (LocationManager) this.getSystemService(LOCATION_SERVICE);
         boolean isLocationEnabled = false;
         if (locationManager != null) {
@@ -59,8 +85,6 @@ public class MainActivity extends AppCompatActivity {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
-
                 }
 
                 @Override
@@ -99,10 +123,10 @@ public class MainActivity extends AppCompatActivity {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
-            longitude.setText("getting location");
-            latitude.setText("getting location");
+                longitude.setText("getting location");
+                latitude.setText("getting location");
             }
-        }else {
+        } else {
             longitude.setText("access denied");
             latitude.setText("access denied");
         }

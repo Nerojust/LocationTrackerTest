@@ -1,9 +1,10 @@
-package com.example.locationtrackertest;
-
-import androidx.fragment.app.FragmentActivity;
+package com.example.locationtrackertest.Activities;
 
 import android.os.Bundle;
 
+import androidx.fragment.app.FragmentActivity;
+
+import com.example.locationtrackertest.R;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
