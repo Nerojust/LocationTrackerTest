@@ -230,8 +230,7 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-
-        locationManager.removeUpdates(locationListener);
+//        locationManager.removeUpdates(locationListener);
     }
 
     private void getMyLocation() {
@@ -351,8 +350,8 @@ public class MainActivity extends AppCompatActivity implements
                     getMyLocation();
                     break;
                 case Activity.RESULT_CANCELED:
-                    Toast.makeText(this, "Location is needed", Toast.LENGTH_SHORT).show();
-
+                    Toast.makeText(this, "Location is needed. Please put it on and try again", Toast.LENGTH_SHORT).show();
+                    checkPermissions();
                     break;
             }
         }
