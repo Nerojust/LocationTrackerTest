@@ -121,26 +121,32 @@ public class MainActivity extends AppCompatActivity implements
     private void getFirstLocationInDB() {
         int userid = locationModel.getId();
         List<com.example.locationtrackertest.Model.Location> locationList = locationDatabase.locationDAO().getUserLocationFromDBbyId(userid);
-        int firstDataId = locationList.get(0).getId();
-        double firstDataLongitude = locationList.get(0).getLongitude();
-        double firstDataLatitude = locationList.get(0).getLatitude();
 
-        Toast.makeText(this, "user id: " + firstDataId + "\n Longitude: " + firstDataLongitude + "\n Latitude: " + firstDataLatitude, Toast.LENGTH_SHORT).show();
 
+        for (int i = 0; i < locationList.size(); i++) {
+
+            int firstDataId = locationList.get(0).getId();
+            double firstDataLongitude = locationList.get(0).getLongitude();
+            double firstDataLatitude = locationList.get(0).getLatitude();
+
+            Toast.makeText(this, "user id: " + firstDataId + "\n Longitude: " + firstDataLongitude + "\n Latitude: " + firstDataLatitude, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void getLastLocationInDb() {
         int userid = locationModel.getId();
         List<com.example.locationtrackertest.Model.Location> locationList = locationDatabase.locationDAO().getUserLocationFromDBbyId(userid);
 
+        for (int i = 0; i < locationList.size(); i++) {
+            com.example.locationtrackertest.Model.Location dd = locationList.get(locationList.size() - 1);
+            int lastDataId = dd.getId();
+            double lastDataLongitude = dd.getLongitude();
+            double lastDataLatitude = dd.getLatitude();
 
-        com.example.locationtrackertest.Model.Location dd = locationList.get(locationList.size() - 1);
-        int lastDataId = dd.getId();
-        double lastDataLongitude = dd.getLongitude();
-        double lastDataLatitude = dd.getLatitude();
-
-        Toast.makeText(this, "user id: " + lastDataId + "\n Longitude: " + lastDataLongitude + "\n Latitude: " + lastDataLatitude, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "user id: " + lastDataId + "\n Longitude: " + lastDataLongitude + "\n Latitude: " + lastDataLatitude, Toast.LENGTH_SHORT).show();
+        }
     }
+
 
     private void getLocationFromRoomDB() {
         List<com.example.locationtrackertest.Model.Location> userLocations = locationDatabase.locationDAO().getUserLocationFromDB();
