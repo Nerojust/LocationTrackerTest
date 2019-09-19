@@ -6,25 +6,6 @@
     android:orientation="vertical"
     tools:context=".Activities.MainActivity">
 
-    <TextView
-        android:id="@+id/longitude"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_gravity="center"
-        android:gravity="center"
-        android:text="Hello World!"
-        android:textSize="17sp"
-        tools:text="longitude here" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:gravity="center"
-        android:id="@+id/latitude"
-        android:textSize="17sp"
-        tools:text="latitude here" />
 
     <Button
         android:id="@+id/startTracking"

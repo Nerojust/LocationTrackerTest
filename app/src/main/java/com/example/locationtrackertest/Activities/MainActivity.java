@@ -2,27 +2,23 @@ package com.example.locationtrackertest.Activities;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
-import android.location.Address;
-import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.room.Room;
 
+import com.example.locationtrackertest.Database.LocationDatabase;
 import com.example.locationtrackertest.R;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -41,10 +37,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements
         OnMapReadyCallback,
@@ -57,7 +51,6 @@ public class MainActivity extends AppCompatActivity implements
     private final static int REQUEST_CHECK_SETTINGS_GPS = 0x1;
     private final static int REQUEST_ID_MULTIPLE_PERMISSIONS = 0x2;
     Button startTracking, stopTracking;
-    TextView longitudeTextview, latitudeTextview;
     private GoogleMap mMap;
     //To store longitude and latitude from map
     private double longitude;
@@ -70,16 +63,16 @@ public class MainActivity extends AppCompatActivity implements
     private double toLatitude;
     private Location mylocation;
     private GoogleApiClient googleApiClient;
-
-    private boolean allGranted;
-    private boolean anyDenied;
+    public static LocationDatabase locationDatabase;
+    private com.example.locationtrackertest.Model.Location locationModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setUpGClient();
-
+        locationDatabase = Room.databaseBuilder(this, LocationDatabase.class, "User_locations").allowMainThreadQueries().build();
+        locationModel = new com.example.locationtrackertest.Model.Location();
     }
 
     private void initMap() {
@@ -101,8 +94,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void initViews() {
-        longitudeTextview = findViewById(R.id.longitude);
-        latitudeTextview = findViewById(R.id.latitude);
         startTracking = findViewById(R.id.startTracking);
         stopTracking = findViewById(R.id.stopTracking);
 
@@ -111,34 +102,55 @@ public class MainActivity extends AppCompatActivity implements
     private void initListeners() {
         startTracking.setOnClickListener(view -> {
             //start the process.
+            startTracking.setEnabled(false);
+            stopTracking.setEnabled(true);
             getMyLocation();
 
         });
         stopTracking.setOnClickListener(view -> {
             //perform stop functionality
+            startTracking.setEnabled(true);
+            stopTracking.setEnabled(false);
+            locationManager.removeUpdates(locationListener);
+            getLocationFromRoomDB();
+            getFirstLocationInDB();
+            getLastLocationInDb();
         });
     }
 
-    private void showSettingsDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(getResources().getString(R.string.need_permission));
-        builder.setMessage(getResources().getString(R.string.settings_permission_request));
-        builder.setPositiveButton(getResources().getString(R.string.goto_settings), (dialog, which) -> {
-            dialog.cancel();
-            openSettings();
-        });
-        builder.setNegativeButton(getResources().getString(R.string.cancel), (dialog, which) -> dialog.cancel());
-        builder.show();
+    private void getFirstLocationInDB() {
+        int userid = locationModel.getId();
+        List<com.example.locationtrackertest.Model.Location> locationList = locationDatabase.locationDAO().getUserLocationFromDBbyId(userid);
+        int firstDataId = locationList.get(0).getId();
+        double firstDataLongitude = locationList.get(0).getLongitude();
+        double firstDataLatitude = locationList.get(0).getLatitude();
+
+        Toast.makeText(this, "user id: " + firstDataId + "\n Longitude: " + firstDataLongitude + "\n Latitude: " + firstDataLatitude, Toast.LENGTH_SHORT).show();
 
     }
 
-    private void openSettings() {
-        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        Uri uri = Uri.fromParts("package", getPackageName(), null);
-        intent.setData(uri);
-        startActivityForResult(intent, 101);
+    private void getLastLocationInDb() {
+        int userid = locationModel.getId();
+        List<com.example.locationtrackertest.Model.Location> locationList = locationDatabase.locationDAO().getUserLocationFromDBbyId(userid);
+
+
+        com.example.locationtrackertest.Model.Location dd = locationList.get(locationList.size() - 1);
+        int lastDataId = dd.getId();
+        double lastDataLongitude = dd.getLongitude();
+        double lastDataLatitude = dd.getLatitude();
+
+        Toast.makeText(this, "user id: " + lastDataId + "\n Longitude: " + lastDataLongitude + "\n Latitude: " + lastDataLatitude, Toast.LENGTH_SHORT).show();
     }
 
+    private void getLocationFromRoomDB() {
+        List<com.example.locationtrackertest.Model.Location> userLocations = locationDatabase.locationDAO().getUserLocationFromDB();
+        for (com.example.locationtrackertest.Model.Location loc : userLocations) {
+            int id = loc.getId();
+            double longitude = loc.getLongitude();
+            double latitude = loc.getLatitude();
+            Toast.makeText(this, "user id: " + id + "\n Longitude: " + longitude + "\n Latitude: " + latitude, Toast.LENGTH_SHORT).show();
+        }
+    }
 
     private synchronized void setUpGClient() {
         googleApiClient = new GoogleApiClient.Builder(this)
@@ -166,6 +178,18 @@ public class MainActivity extends AppCompatActivity implements
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         //You can display a message here
         Toast.makeText(this, "connection failed", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermissions();
+            return;
+        }
+
+
+        locationManager.removeUpdates(locationListener);
     }
 
     private void getMyLocation() {
@@ -205,22 +229,9 @@ public class MainActivity extends AppCompatActivity implements
                                             public void onLocationChanged(Location location) {
                                                 currentLongitude = location.getLongitude();
                                                 currentLatitude = location.getLatitude();
-                                                long currentTime = location.getTime();
-                                                float currentAccuracy = location.getAccuracy();
-                                                Toast.makeText(MainActivity.this, currentTime + "==" + currentAccuracy, Toast.LENGTH_SHORT).show();
-                                                Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
-                                                try {
-                                                    List<Address> addressList = geocoder.getFromLocation(currentLatitude, currentLongitude, 1);
-                                                    longitudeTextview.setText(addressList.get(0).getAddressLine(0));
-                                                    latitudeTextview.setText(addressList.get(0).getAdminArea());
-                                                    Toast.makeText(MainActivity.this,
-                                                            String.valueOf(addressList.get(0).getLatitude()) + " =="
-                                                                    + String.valueOf(addressList.get(0).getLongitude()), Toast.LENGTH_SHORT).show();
+                                                //save the coords to db
+                                                saveTheCoordsToDb();
 
-                                                } catch (IOException e) {
-                                                    e.printStackTrace();
-                                                    Toast.makeText(MainActivity.this, "error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                                }
                                                 //zoom in
                                                 moveMap();
                                             }
@@ -277,6 +288,16 @@ public class MainActivity extends AppCompatActivity implements
                 }
             }
         }
+    }
+
+
+    private void saveTheCoordsToDb() {
+        com.example.locationtrackertest.Model.Location location1 = new com.example.locationtrackertest.Model.Location();
+        location1.setLatitude(currentLatitude);
+        location1.setLongitude(currentLongitude);
+
+        locationDatabase.locationDAO().addUserLocationToDB(location1);
+        //Toast.makeText(MainActivity.this, "Data Saved to Db", Toast.LENGTH_SHORT).show();
     }
 
     @Override
