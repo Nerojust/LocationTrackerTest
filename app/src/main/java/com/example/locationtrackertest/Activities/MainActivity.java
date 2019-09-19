@@ -51,6 +51,9 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Request for location as the application starts and cater for denial or whatever
+ */
 public class MainActivity extends AppCompatActivity implements
         OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -105,17 +108,23 @@ public class MainActivity extends AppCompatActivity implements
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 
+    /**
+     * instantiate views
+     */
     private void initViews() {
         startTracking = findViewById(R.id.startTracking);
         stopTracking = findViewById(R.id.stopTracking);
 
     }
 
+    /**
+     * instantiate click listeners
+     */
     private void initListeners() {
         startTracking.setOnClickListener(view -> {
             //start the process.
             startTracking.setEnabled(false);
-
+//get location coords
             getMyLocation();
             stopTracking.setEnabled(true);
 
@@ -125,42 +134,14 @@ public class MainActivity extends AppCompatActivity implements
             startTracking.setEnabled(true);
             stopTracking.setEnabled(false);
             locationManager.removeUpdates(locationListener);
+            //save data to Room
             getLocationFromRoomDB();
             //zoom in
             moveMap();
+            //show tracker on map
             getDirection();
         });
     }
-
-    private void getFirstLocationInDB() {
-        int userid = locationModel.getId();
-        List<com.example.locationtrackertest.Model.Location> locationList = locationDatabase.locationDAO().getUserLocationFromDBbyId(userid);
-
-
-        for (int i = 0; i < locationList.size(); i++) {
-
-            int firstDataId = locationList.get(0).getId();
-            double firstDataLongitude = locationList.get(0).getLongitude();
-            double firstDataLatitude = locationList.get(0).getLatitude();
-
-            Toast.makeText(this, "user id: " + firstDataId + "\n Longitude: " + firstDataLongitude + "\n Latitude: " + firstDataLatitude, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void getLastLocationInDb() {
-        int userid = locationModel.getId();
-        List<com.example.locationtrackertest.Model.Location> locationList = locationDatabase.locationDAO().getUserLocationFromDBbyId(userid);
-
-        for (int i = 0; i < locationList.size(); i++) {
-            com.example.locationtrackertest.Model.Location dd = locationList.get(locationList.size() - 1);
-            int lastDataId = dd.getId();
-            double lastDataLongitude = dd.getLongitude();
-            double lastDataLatitude = dd.getLatitude();
-
-            Toast.makeText(this, "user id: " + lastDataId + "\n Longitude: " + lastDataLongitude + "\n Latitude: " + lastDataLatitude, Toast.LENGTH_SHORT).show();
-        }
-    }
-
 
     private void getLocationFromRoomDB() {
         List<com.example.locationtrackertest.Model.Location> userLocations = locationDatabase.locationDAO().getUserLocationFromDB();
@@ -170,28 +151,7 @@ public class MainActivity extends AppCompatActivity implements
             firstLongitudeEntry = locationList.get(0).getLongitude();
             firstLatitudeEntry = locationList.get(0).getLatitude();
             //Toast.makeText(this, "first entry user id: " + id + "\n Longitude: " + longitude + "\n Latitude: " + latitude, Toast.LENGTH_SHORT).show();
-
-
         }
-//        for (int i = 0; i < userLocations.size(); i++) {
-//
-//            int firstDataId = userLocations.get(0).getId();
-//            com.example.locationtrackertest.Model.Location dd = userLocations.get(userLocations.size() - (userLocations.size()-1));
-//            double firstDataLongitude = dd.getLongitude();
-//            double firstDataLatitude = dd.getLatitude();
-//
-//
-//            Toast.makeText(this, "First user id: " + firstDataId + "\n Longitude: " + firstDataLongitude + "\n Latitude: " + firstDataLatitude, Toast.LENGTH_SHORT).show();
-//        }
-//
-//        for (int i = 0; i < userLocations.size(); i++) {
-//            com.example.locationtrackertest.Model.Location dd = userLocations.get(userLocations.size() - 1);
-//            int lastDataId = dd.getId();
-//            double lastDataLongitude = dd.getLongitude();
-//            double lastDataLatitude = dd.getLatitude();
-//
-//            Toast.makeText(this, "Last user id: " + lastDataId + "\n Longitude: " + lastDataLongitude + "\n Latitude: " + lastDataLatitude, Toast.LENGTH_SHORT).show();
-//        }
     }
 
     private synchronized void setUpGClient() {
