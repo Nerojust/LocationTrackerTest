@@ -326,6 +326,9 @@ public class MainActivity extends AppCompatActivity implements
                                 break;
                         }
                     });
+                } else {
+                    checkPermissions();
+                    Toast.makeText(this, "Please accept permission", Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -380,7 +383,11 @@ public class MainActivity extends AppCompatActivity implements
             getMyLocation();
             initViews();
             initListeners();
-        } else checkPermissions();
+        } else if (permissionLocation == PackageManager.PERMISSION_DENIED) {
+            checkPermissions();
+        }
+
+
     }
 
     //Function to move the map
