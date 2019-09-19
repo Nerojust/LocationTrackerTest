@@ -43,6 +43,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.SphericalUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -85,7 +86,11 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        initViews();
+        initListeners();
         setUpGClient();
+        initMap();
         locationDatabase = Room.databaseBuilder(this, LocationDatabase.class, "User_locations").allowMainThreadQueries().build();
         locationModel = new com.example.locationtrackertest.Model.Location();
     }
@@ -103,8 +108,8 @@ public class MainActivity extends AppCompatActivity implements
         mMap = googleMap;
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(currentLatitude, currentLongitude);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        LatLng sydney = new LatLng(-44, 3.47);
+        mMap.addMarker(new MarkerOptions().position(sydney).title("User Location"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 
@@ -125,8 +130,10 @@ public class MainActivity extends AppCompatActivity implements
             //start the process.
             startTracking.setEnabled(false);
 //get location coords
+            mMap.clear();
             getMyLocation();
             stopTracking.setEnabled(true);
+
 
         });
         stopTracking.setOnClickListener(view -> {
@@ -137,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements
             //save data to Room
             getLocationFromRoomDB();
             //zoom in
-            moveMap();
+            moveMapEnd();
             //show tracker on map
             getDirection();
         });
@@ -145,13 +152,13 @@ public class MainActivity extends AppCompatActivity implements
 
     private void getLocationFromRoomDB() {
         List<com.example.locationtrackertest.Model.Location> userLocations = locationDatabase.locationDAO().getUserLocationFromDB();
-        for (com.example.locationtrackertest.Model.Location loc : userLocations) {
-            List<com.example.locationtrackertest.Model.Location> locationList = locationDatabase.locationDAO().getUserLocationFromDBbyId(userLocations.get(0).getId());
-            int id = locationList.get(0).getId();
-            firstLongitudeEntry = locationList.get(0).getLongitude();
-            firstLatitudeEntry = locationList.get(0).getLatitude();
-            //Toast.makeText(this, "first entry user id: " + id + "\n Longitude: " + longitude + "\n Latitude: " + latitude, Toast.LENGTH_SHORT).show();
-        }
+
+        List<com.example.locationtrackertest.Model.Location> locationList = locationDatabase.locationDAO().getUserLocationFromDBbyId(userLocations.get(0).getId());
+        int id = locationList.get(0).getId();
+        firstLongitudeEntry = locationList.get(0).getLongitude();
+        firstLatitudeEntry = locationList.get(0).getLatitude();
+        //Toast.makeText(this, "first entry user id: " + id + "\n Longitude: " + firstLongitudeEntry + "\n Latitude: " + firstLatitudeEntry, Toast.LENGTH_SHORT).show();
+
     }
 
     private synchronized void setUpGClient() {
@@ -200,8 +207,8 @@ public class MainActivity extends AppCompatActivity implements
                         Manifest.permission.ACCESS_FINE_LOCATION);
                 if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
                     LocationRequest locationRequest = new LocationRequest();
-                    locationRequest.setInterval(1000);
-                    locationRequest.setFastestInterval(1000);
+                    locationRequest.setInterval(10000);
+                    locationRequest.setFastestInterval(10000);
                     locationRequest.setSmallestDisplacement(10);
                     locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
                     LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
@@ -220,9 +227,7 @@ public class MainActivity extends AppCompatActivity implements
                                     if (locationManager != null) {
                                         isLocationEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
                                     }
-                                    initMap();
-                                    initViews();
-                                    initListeners();
+
                                     if (isLocationEnabled) {
                                         locationListener = new LocationListener() {
 
@@ -231,10 +236,8 @@ public class MainActivity extends AppCompatActivity implements
                                                 currentLongitude = location.getLongitude();
                                                 currentLatitude = location.getLatitude();
                                                 //save the coords to db
-
                                                 saveTheCoordsToDb();
-
-
+                                                moveMapStart();
                                             }
 
                                             @Override
@@ -260,7 +263,6 @@ public class MainActivity extends AppCompatActivity implements
 
                                         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
                                     } else {
-
                                         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
                                     }
                                 }
@@ -310,7 +312,7 @@ public class MainActivity extends AppCompatActivity implements
         if (requestCode == REQUEST_CHECK_SETTINGS_GPS) {
             switch (resultCode) {
                 case Activity.RESULT_OK:
-                    getMyLocation();
+                    //getMyLocation();
                     break;
                 case Activity.RESULT_CANCELED:
                     Toast.makeText(this, "Location is needed. Please put it on and try again", Toast.LENGTH_SHORT).show();
@@ -331,16 +333,15 @@ public class MainActivity extends AppCompatActivity implements
                         listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), REQUEST_ID_MULTIPLE_PERMISSIONS);
             }
         } else {
-            getMyLocation();
+           // getMyLocation();
         }
-
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         int permissionLocation = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION);
         if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
-            getMyLocation();
+            //getMyLocation();
             initViews();
             initListeners();
         } else if (permissionLocation == PackageManager.PERMISSION_DENIED) {
@@ -351,21 +352,38 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     //Function to move the map
-    private void moveMap() {
+    private void moveMapEnd() {
         //Creating a LatLng Object to store Coordinates
-        LatLng latLng = new LatLng(currentLatitude, currentLatitude);
+        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
         //Adding marker to map
         mMap.addMarker(new MarkerOptions()
                 .position(latLng) //setting position
                 .draggable(true) //Making the marker draggable
-                .title("Current Location")); //Adding a title
+                .title("Your End Location")); //Adding a title
 
         //Moving the camera
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
 
         //Animating the camera
         mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
+    }
+    //Function to move the map
+    private void moveMapStart() {
+        //Creating a LatLng Object to store Coordinates
+        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
+
+        //Adding marker to map
+        mMap.addMarker(new MarkerOptions()
+                .position(latLng) //setting position
+                .draggable(true) //Making the marker draggable
+                .title("Your Current Location")); //Adding a title
+
+        //Moving the camera
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+
+        //Animating the camera
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(13));
     }
 
     @Override
@@ -392,15 +410,13 @@ public class MainActivity extends AppCompatActivity implements
         StringBuilder urlString = new StringBuilder();
         urlString.append("https://maps.googleapis.com/maps/api/directions/json");
         urlString.append("?origin=");// from
-        urlString.append(Double.toString(sourcelat));
+        urlString.append(sourcelat);
         urlString.append(",");
-        urlString
-                .append(Double.toString(sourcelog));
+        urlString.append(sourcelog);
         urlString.append("&destination=");// to
-        urlString
-                .append(Double.toString(destlat));
+        urlString.append(destlat);
         urlString.append(",");
-        urlString.append(Double.toString(destlog));
+        urlString.append(destlog);
         urlString.append("&sensor=false&mode=driving&alternatives=true");
         urlString.append("&key=AIzaSyBj02AsPhErgBioUFU98Db5AENzi2sgcc4");
         return urlString.toString();
@@ -408,7 +424,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void getDirection() {
         //Getting the URL
-        String url = makeURL(firstLatitudeEntry, firstLongitudeEntry, currentLatitude, currentLongitude);
+        String url = makeURL(firstLatitudeEntry, firstLongitudeEntry, currentLatitude, currentLatitude);
 
         //Showing a dialog till we get the route
         final ProgressDialog loading = ProgressDialog.show(this, "Getting Route", "Please wait...", false, false);
@@ -434,10 +450,10 @@ public class MainActivity extends AppCompatActivity implements
         LatLng to = new LatLng(currentLatitude, currentLongitude);
 
 //        //Calculating the distance in meters
-//        Double distance = SphericalUtil.computeDistanceBetween(from, to);
+        double distance = SphericalUtil.computeDistanceBetween(from, to);
 
         //Displaying the distance
-        //Toast.makeText(this, String.valueOf(distance + " Meters"), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "You moved " + distance + " Meters", Toast.LENGTH_SHORT).show();
 
 
         try {
@@ -494,4 +510,9 @@ public class MainActivity extends AppCompatActivity implements
         return poly;
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        googleApiClient.disconnect();
+    }
 }
