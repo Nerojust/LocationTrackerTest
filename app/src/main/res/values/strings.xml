@@ -4,6 +4,7 @@
     <string name="settings_permission_request">This app needs permission to use this feature. You can grant them in app settings.</string>
     <string name="need_permission">Need Permissions</string>
     <string name="goto_settings">GOTO SETTINGS</string>
+    <string name="location_needed">Location is needed to proceed. Thank you.</string>
     <string name="put_on_your_gps">Please turn on your GPS before proceeding</string>
     <string name="cancel">Cancel</string>
 </resources>
